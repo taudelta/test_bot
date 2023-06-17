@@ -11,6 +11,12 @@ import (
 	"github.com/taudelta/test_bot/internal/models"
 )
 
+const (
+	StateBeforeStartQASession = 1
+	StateQASessionStarted     = 2
+	StateLanguageSelection    = 3
+)
+
 var arrayKeyboard = tgbotapi.NewInlineKeyboardMarkup(
 	tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("Да", "/answer"),
@@ -23,6 +29,7 @@ type Stat struct {
 	InvalidAnswers int
 }
 
+// Session represent an Question&Answer session
 type Session struct {
 	State         int
 	Theme         models.Theme
@@ -30,7 +37,91 @@ type Session struct {
 	Statistics    Stat
 }
 
-var sessions = map[int64]*Session{}
+type State struct {
+	Value int
+}
+
+type UserProfile struct {
+	Language string
+}
+
+var (
+	states   = map[int64]*State{}
+	sessions = map[int64]*Session{}
+	profiles = map[int64]*UserProfile{}
+)
+
+// Start запуск бота, который читает входящие сообщения
+// и обрабатывает команды
+func Start(botAPI *tgbotapi.BotAPI) chan struct{} {
+	loadLanguagePack()
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := botAPI.GetUpdatesChan(u)
+
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		for update := range updates {
+			// check for a click to the button
+			if update.CallbackQuery != nil {
+				handleCallback(botAPI, update)
+				continue
+			}
+
+			if update.Message == nil {
+				continue
+			}
+
+			// received standart command
+			handleMessage(botAPI, update)
+		}
+	}()
+
+	return doneCh
+}
+
+func handleMessage(botAPI *tgbotapi.BotAPI, update tgbotapi.Update) {
+	userID := update.Message.From.ID
+	userName := update.Message.From.UserName
+	message := update.Message.Text
+
+	log.Printf("[user=%s][id=%d] %s\n", userName, userID, message)
+
+	if _, ok := states[userID]; !ok {
+		states[userID] = &State{
+			Value: StateBeforeStartQASession,
+		}
+	}
+
+	if _, ok := profiles[userID]; !ok {
+		profiles[userID] = &UserProfile{
+			Language: "en",
+		}
+	}
+
+	if message == "/start" {
+		// start session
+		states[userID].Value = StateQASessionStarted
+		sessions[userID] = &Session{}
+		showThemes(botAPI, userID)
+		return
+	}
+
+	if message == "/lang" || message == "/sl" || message == "/swl" {
+		if states[userID].Value == StateBeforeStartQASession {
+			// switch language command
+			showLanguage(botAPI, userID)
+			states[userID].Value = StateLanguageSelection
+			return
+		}
+	}
+
+	send(botAPI, userID, IncorrectCommand)
+}
 
 func handleCallback(botAPI *tgbotapi.BotAPI, update tgbotapi.Update) {
 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
@@ -44,54 +135,38 @@ func handleCallback(botAPI *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	log.Println("Получена команда", cmd)
 
-	if cmd == "/answer" {
-		handleCommand(botAPI, update, callback)
-	} else if cmd == "/cancel" {
-		delete(sessions, update.CallbackQuery.From.ID)
-		send(botAPI, update.CallbackQuery.From.ID, "До свидания. Всего хорошего.")
-	} else {
-		handleCommand(botAPI, update, callback)
+	userID := update.CallbackQuery.From.ID
+	state := states[userID]
+	switch state.Value {
+	case StateLanguageSelection:
+		handleLanguageCommand(botAPI, update, callback, cmd)
+	default:
+		handleQACommand(botAPI, update, callback, cmd)
 	}
 }
 
-// Start запуск бота, который читает входящие сообщения
-// и обрабатывает команды
-func Start(botAPI *tgbotapi.BotAPI) chan struct{} {
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+func handleLanguageCommand(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, callback tgbotapi.CallbackConfig, cmd string) {
+	userID := update.CallbackQuery.From.ID
+	languageCode := cmd
+	if languageCode != "ru" && languageCode != "en" {
+		send(botAPI, userID, IncorrectLanguage)
+		return
+	}
+	states[userID].Value = StateBeforeStartQASession
+	profiles[userID].Language = languageCode
+	send(botAPI, userID, ChangeLanguageSuccess)
+}
 
-	updates := botAPI.GetUpdatesChan(u)
-
-	doneCh := make(chan struct{})
-
-	go func() {
-		defer close(doneCh)
-		for update := range updates {
-			if update.CallbackQuery != nil {
-				handleCallback(botAPI, update)
-				continue
-			}
-
-			if update.Message == nil {
-				continue
-			}
-
-			userID := update.Message.From.ID
-			userName := update.Message.From.UserName
-			message := update.Message.Text
-
-			log.Printf("[%s][id=%d] %s\n", userName, userID, message)
-
-			if message == "/start" {
-				sessions[update.Message.From.ID] = &Session{}
-				showThemes(botAPI, userID)
-			} else {
-				send(botAPI, userID, "Неверная команда. Для прохождения опроса введите /start")
-			}
-		}
-	}()
-
-	return doneCh
+func handleQACommand(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, callback tgbotapi.CallbackConfig, cmd string) {
+	userID := update.CallbackQuery.From.ID
+	if cmd == "/answer" {
+		handleCommand(botAPI, update, callback)
+	} else if cmd == "/cancel" {
+		delete(sessions, userID)
+		send(botAPI, userID, GoodbyeMessage)
+	} else {
+		handleCommand(botAPI, update, callback)
+	}
 }
 
 func showThemes(botAPI *tgbotapi.BotAPI, userID int64) {
@@ -104,7 +179,7 @@ func showThemes(botAPI *tgbotapi.BotAPI, userID int64) {
 		return themes[i].ID < themes[j].ID
 	})
 
-	msg := tgbotapi.NewMessage(userID, "Выберите тему для тестирования")
+	msg := tgbotapi.NewMessage(userID, t(ThemeSelectionMessage, userID))
 
 	var markup [][]tgbotapi.InlineKeyboardButton
 	for index, t := range themes {
@@ -121,18 +196,49 @@ func showThemes(botAPI *tgbotapi.BotAPI, userID int64) {
 	}
 }
 
-func startUserSession(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, themeID int64) {
-	msgTemplate := "Давайте проведем тестирование по теме: %s"
+func showLanguage(botAPI *tgbotapi.BotAPI, userID int64) {
+	msg := tgbotapi.NewMessage(userID, "Select language")
 
+	languages := []struct {
+		code string
+		name string
+	}{
+		{
+			code: "en",
+			name: "English",
+		},
+		{
+			code: "ru",
+			name: "Russian",
+		},
+	}
+
+	var markup [][]tgbotapi.InlineKeyboardButton
+	for _, t := range languages {
+		txt := fmt.Sprintf("%s", t.name)
+		row := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(txt, t.code))
+		markup = append(markup, row)
+	}
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(markup...)
+	msg.ReplyMarkup = keyboard
+
+	if _, err := botAPI.Send(msg); err != nil {
+		log.Println("send error", err)
+	}
+}
+
+func startUserSession(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, themeID int64) {
 	userID := update.CallbackQuery.From.ID
 
 	var msgText string
 	theme, ok := cache[themeID]
 	if !ok {
-		msgText = "Заданная тема не найдена"
+		msgText = t(ThemeNotFoundMessage, userID)
 	} else {
 		log.Println("Тема занятия найдена в кеше")
-		msgText = fmt.Sprintf(msgTemplate, theme.Title)
+		tpl := t(ThemeStartConfirmMessage, userID) + "%s"
+		msgText = fmt.Sprintf(tpl, theme.Title)
 	}
 
 	msg := tgbotapi.NewMessage(userID, msgText)
@@ -154,6 +260,13 @@ func startUserSession(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, themeID i
 }
 
 func send(botAPI *tgbotapi.BotAPI, userID int64, text string) {
+	msg := tgbotapi.NewMessage(userID, t(text, userID))
+	if _, err := botAPI.Send(msg); err != nil {
+		log.Println("Ошибка", err)
+	}
+}
+
+func sendNoTranslate(botAPI *tgbotapi.BotAPI, userID int64, text string) {
 	msg := tgbotapi.NewMessage(userID, text)
 	if _, err := botAPI.Send(msg); err != nil {
 		log.Println("Ошибка", err)
@@ -163,15 +276,24 @@ func send(botAPI *tgbotapi.BotAPI, userID int64, text string) {
 func complete(botAPI *tgbotapi.BotAPI, userID int64, session *Session) {
 	log.Println("Завершаем сессию пользователя", userID)
 	delete(sessions, userID)
-	confirmTemplate := "Спасибо что прошли опрос. Ваш результат: %d правильных ответов, %d неправильных"
+	confirmTemplate := fmt.Sprintf(
+		"%s %s %s, %s %s",
+		t(SessionEndStatisticsMessage, userID),
+		"%d",
+		t(RightAnswerCountMessage, userID),
+		"%d",
+		t(WrongAnswerCountMessage, userID),
+	)
+
 	txt := fmt.Sprintf(confirmTemplate, session.Statistics.ValidAnswers, session.Statistics.InvalidAnswers)
-	send(botAPI, userID, txt)
+	states[userID].Value = StateBeforeStartQASession
+	sendNoTranslate(botAPI, userID, txt)
 }
 
 func acceptAnswer(botAPI *tgbotapi.BotAPI, userID int64, answerText string, session *Session) {
 	answerNumber, err := strconv.Atoi(answerText)
 	if err != nil {
-		send(botAPI, userID, "Ошибка")
+		send(botAPI, userID, ErrorMessage)
 		return
 	}
 
@@ -193,7 +315,7 @@ func handleCommand(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, callback tgb
 
 	userID := update.CallbackQuery.From.ID
 	if !ok {
-		send(botAPI, userID, "Сессия не найдена")
+		send(botAPI, userID, SessionNotFoundMessage)
 		return
 	}
 
@@ -221,7 +343,7 @@ func handleCommand(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, callback tgb
 	question := session.Theme.QuestionList[session.QuestionIndex]
 
 	if len(question.Answers) == 0 {
-		send(botAPI, userID, "Ошибка. Ответы не найдены")
+		send(botAPI, userID, AnswersNotFoundMessage)
 		return
 	}
 

@@ -14,12 +14,10 @@ import (
 
 func main() {
 	var (
-		themeID     int64
 		dbFile      string
 		cmdBotToken string
 	)
 
-	flag.Int64Var(&themeID, "theme_id", 1, "идентификатор темы с вопросами")
 	flag.StringVar(&dbFile, "db_file", "test.db", "путь до файла базы данных с вопросами")
 	flag.StringVar(&cmdBotToken, "bot_token", "", "токен telegram бота")
 
@@ -32,7 +30,7 @@ func main() {
 
 	botAPI, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
-		log.Panic(err)
+		log.Panic("bot initialization error: ", err)
 	}
 
 	log.Println("Загружаем вопросы и ответы в память")

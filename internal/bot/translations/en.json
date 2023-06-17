@@ -1,0 +1,18 @@
+{
+    "Language": "en",
+    "Translations": {
+        "ErrorMessage": "Something went wrong",
+        "SessionNotFound": "Session was not found",
+        "IncorrectCommand": "Incorrect command. To start the test please type /start",
+        "IncorrectLanguage": "Not supported language was selected",
+        "ChangeLanguageSuccess": "Current language was changed",
+        "GoodbyeMessage": "Goodbye. Best regards.",
+        "ThemeSelectionMessage": "Select theme for this session",
+        "ThemeStartConfirmMessage": "Lets start test for a theme: ",
+        "ThemeNotFoundMessage": "Selected theme was not found",
+        "SessionEndStatisticsMessage": "Congratulations for completing test. Your result is:",
+        "RightAnswerCountMessage": "right answers",
+        "WrongAnswerCountMessage": "wrong answers",
+        "AnswersNotFoundMessage": "Error. Answers not found"
+    }
+}

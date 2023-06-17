@@ -10,6 +10,14 @@ import (
 
 var cache = map[int64]*models.Theme{}
 
+const questionsQuery = `
+select t.id as theme_id, t.title, q.id as question_id, q.txt, a.id as answer_id, a.txt, a.valid
+from themes as t
+left join questions as q on q.theme_id = t.id
+left join answers as a on a.question_id = q.id
+order by t.id, q.id, a.id
+`
+
 func FillQuestions(dbFile string) {
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
@@ -18,13 +26,7 @@ func FillQuestions(dbFile string) {
 	defer db.Close()
 
 	log.Println("Открываем базу данных с вопросами и ответами")
-	rows, err := db.Query(`
-select t.id as theme_id, t.title, q.id as question_id, q.txt, a.id as answer_id, a.txt, a.valid
-from themes as t
-left join questions as q on q.theme_id = t.id
-left join answers as a on a.question_id = q.id
-order by t.id, q.id, a.id
-`)
+	rows, err := db.Query(questionsQuery)
 	if err != nil {
 		panic(err)
 	}

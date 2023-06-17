@@ -1,0 +1,18 @@
+{
+    "Language": "ru",
+    "Translations": {
+        "ErrorMessage": "Что-то пошло не так",
+        "SessionNotFound": "Сессия не найдена",
+        "IncorrectCommand": "Неверная команда. Для прохождения опроса введите /start",
+        "IncorrectLanguage": "Выбран не поддерживаемый язык",
+        "ChangeLanguageSuccess": "Язык отображения текста изменен",
+        "GoodbyeMessage": "До свидания. Всего хорошего.",
+        "ThemeSelectionMessage": "Выберите тему для тестирования",
+        "ThemeStartConfirmMessage": "Давайте проведем тестирование по теме: ",
+        "ThemeNotFoundMessage": "Заданная тема не найдена",
+        "SessionEndStatisticsMessage": "Спасибо что прошли опрос. Ваш результат:",
+        "RightAnswerCountMessage": "правильных ответов",
+        "WrongAnswerCountMessage": "неправильных",
+        "AnswersNotFoundMessage": "Ошибка. Ответы не найдены"
+    }
+}

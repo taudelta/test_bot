@@ -3,6 +3,14 @@
 Разработано для школы программирования Golang5
 #(https://vk.com/golang5)
 
+## Команды
+
+### /start
+Начинает опрос
+
+### /lang, /l, /swl, /sl
+Переключение языка
+
 ## Запуск
 
 - Создать бота в Telegram и получить уникальный ключ
@@ -17,7 +25,7 @@
 ### Команда
 
 ```bash
-    go run cmd\migrate\main.go --db=test.db
+go run cmd\migrate\main.go --db=test.db
 ```
 
 ## Импорт данных
@@ -30,7 +38,7 @@
 Пример файл приводится ниже
 
 ```bash
-    go run cmd\import\import.go --test_file=test.json --db=test.db
+go run cmd\import\import.go --test_file=test.json --db=test.db
 ```
 
 ## Запуск Telegram бота
@@ -40,7 +48,7 @@
 В параметре db указывается путь к базе данных с вопросами
 
 ```bash
-    go run cmd\bot\main.go --db=test.db --bot_token=token
+go run cmd\bot\main.go --db=test.db --bot_token=token
 ```
 
 ## Пример файла с вопросами
