@@ -14,11 +14,11 @@ import (
 
 func main() {
 	var (
-		dbFile      string
+		dbPath      string
 		cmdBotToken string
 	)
 
-	flag.StringVar(&dbFile, "db_file", "test.db", "путь до файла базы данных с вопросами")
+	flag.StringVar(&dbPath, "db_path", ".", "путь до файла базы данных с вопросами")
 	flag.StringVar(&cmdBotToken, "bot_token", "", "токен telegram бота")
 
 	flag.Parse()
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	log.Println("Загружаем вопросы и ответы в память")
-	bot.FillQuestions(dbFile)
+	bot.LoadData(dbPath)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

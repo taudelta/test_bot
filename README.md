@@ -8,7 +8,7 @@
 ### /start
 Начинает опрос
 
-### /lang, /l, /swl, /sl
+### /lang, /swl, /sl
 Переключение языка
 
 ## Запуск
@@ -20,12 +20,12 @@
 
 ## Создание базы данных
 
-В параметре db указывается путь к новой базе данных
+В параметре language указывается язык для вопросов
 
 ### Команда
 
 ```bash
-go run cmd\migrate\main.go --db=test.db
+go run cmd\migrate\main.go --language=en
 ```
 
 ## Импорт данных
@@ -38,7 +38,7 @@ go run cmd\migrate\main.go --db=test.db
 Пример файл приводится ниже
 
 ```bash
-go run cmd\import\import.go --test_file=test.json --db=test.db
+go run cmd\import\import.go --test_file=test_en.json.example --db=en.db
 ```
 
 ## Запуск Telegram бота

@@ -13,6 +13,8 @@
         "SessionEndStatisticsMessage": "Congratulations for completing test. Your result is:",
         "RightAnswerCountMessage": "right answers",
         "WrongAnswerCountMessage": "wrong answers",
-        "AnswersNotFoundMessage": "Error. Answers not found"
+        "AnswersNotFoundMessage": "Error. Answers not found",
+        "YesReplyMessage": "Yes",
+        "NoReplyMessage": "No"
     }
 }

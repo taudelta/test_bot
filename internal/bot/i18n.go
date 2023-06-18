@@ -23,6 +23,8 @@ const (
 	RightAnswerCountMessage     = "RightAnswerCountMessage"
 	WrongAnswerCountMessage     = "WrongAnswerCountMessage"
 	AnswersNotFoundMessage      = "AnswersNotFoundMessage"
+	YesReplyMessage             = "YesReplyMessage"
+	NoReplyMessage              = "NoReplyMessage"
 )
 
 type LanguagePack struct {

@@ -12,16 +12,16 @@ import (
 Скрипт создания новой базы данных для telegram бота
 */
 func main() {
-	var testDB string
+	var language string
 
-	flag.StringVar(&testDB, "db", "", "filepath to test db")
+	flag.StringVar(&language, "language", "", "filepath to test db")
 	flag.Parse()
 
-	if testDB == "" {
+	if language == "" {
 		log.Panic("db is required argument")
 	}
 
-	db, err := sql.Open("sqlite3", testDB)
+	db, err := sql.Open("sqlite3", language+".db")
 	if err != nil {
 		log.Panic(err)
 	}

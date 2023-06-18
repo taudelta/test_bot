@@ -13,6 +13,8 @@
         "SessionEndStatisticsMessage": "Спасибо что прошли опрос. Ваш результат:",
         "RightAnswerCountMessage": "правильных ответов",
         "WrongAnswerCountMessage": "неправильных",
-        "AnswersNotFoundMessage": "Ошибка. Ответы не найдены"
+        "AnswersNotFoundMessage": "Ошибка. Ответы не найдены",
+        "YesReplyMessage": "Да",
+        "NoReplyMessage": "Нет"
     }
 }

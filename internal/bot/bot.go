@@ -17,12 +17,14 @@ const (
 	StateLanguageSelection    = 3
 )
 
-var arrayKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Да", "/answer"),
-		tgbotapi.NewInlineKeyboardButtonData("Нет", "/cancel"),
-	),
-)
+func NewReplyKeyboardBasic(userID int64, language string) tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(t(YesReplyMessage, userID), "/answer"),
+			tgbotapi.NewInlineKeyboardButtonData(t(NoReplyMessage, userID), "/cancel"),
+		),
+	)
+}
 
 type Stat struct {
 	ValidAnswers   int
@@ -170,8 +172,10 @@ func handleQACommand(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, callback t
 }
 
 func showThemes(botAPI *tgbotapi.BotAPI, userID int64) {
-	themes := make([]*models.Theme, 0, len(cache))
-	for _, v := range cache {
+	language := profiles[userID].Language
+
+	themes := make([]*models.Theme, 0, len(cache[language]))
+	for _, v := range cache[language] {
 		themes = append(themes, v)
 	}
 
@@ -231,8 +235,10 @@ func showLanguage(botAPI *tgbotapi.BotAPI, userID int64) {
 func startUserSession(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, themeID int64) {
 	userID := update.CallbackQuery.From.ID
 
+	language := profiles[userID].Language
+
 	var msgText string
-	theme, ok := cache[themeID]
+	theme, ok := cache[language][themeID]
 	if !ok {
 		msgText = t(ThemeNotFoundMessage, userID)
 	} else {
@@ -245,7 +251,7 @@ func startUserSession(botAPI *tgbotapi.BotAPI, update tgbotapi.Update, themeID i
 
 	if ok {
 		// показываем клавиатуру с кнопками Да/Нет
-		msg.ReplyMarkup = arrayKeyboard
+		msg.ReplyMarkup = NewReplyKeyboardBasic(userID, language)
 
 		sessions[userID].Theme = *theme
 		sessions[userID].QuestionIndex = -1
